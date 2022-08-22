@@ -3,20 +3,30 @@ import * as CANNON from 'cannon-es';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import dat from 'dat.gui';
+import Stats from 'three/examples/jsm/libs/stats.module'
+import CannonUtils from './utils/cannonUtils.js'
+import CannonDebugRenderer from './utils/CannonDebugRenderer.js'
 
 const canvas = document.querySelector('.canvas');
+const progress = document.querySelector('.cursor-progress');
+const progressBar = progress.querySelector('.bar');
+
+let startTime = 0;
+let endTime = 0;
+let progressChk = false;
+let progressGage = 0;
 
 // renderer
 const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: true,
 });
-renderer.shadowMap.enable = true;
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
 
 // scene
 const scene = new THREE.Scene;
-scene.background = new THREE.Color('#f2f2f2');
+scene.background = new THREE.Color('#111');
 
 // camera 
 const camera = new THREE.PerspectiveCamera(
@@ -35,19 +45,18 @@ const controls = new OrbitControls( camera, renderer.domElement );
 // gui
 const gui = new dat.GUI();
 
-// light
-const ambientLight = new THREE.AmbientLight('#fff', 0.5);
-const spotLight = new THREE.SpotLight('#fff');
-spotLight.angle = 0.5;
-spotLight.position.set(0, 5, 50);
-// ambientLiglightht.receiveShadow = true;
-// ambientLight.castShadow = true;
-scene.add(ambientLight, spotLight);
+// status
+const stats = Stats()
+document.body.appendChild(stats.dom)
 
-gui.add(spotLight, 'angle', 0, Math.PI, '0.1').name('spotLight angle');
-gui.add(spotLight.position, 'x', 0, 100, '0.1').name('spotLight x');
-gui.add(spotLight.position, 'y', 0, 100, '0.1').name('spotLight y');
-gui.add(spotLight.position, 'z', 0, 100, '0.1').name('spotLight z');
+// light
+const ambientLight = new THREE.AmbientLight('#fff', 0.1);
+const spotLight = new THREE.SpotLight('#fff', 1);
+spotLight.castShadow = true;
+spotLight.shadow.mapSize.width = 2048;
+spotLight.shadow.mapSize.height = 2048;
+spotLight.position.set(0, 10, 50);
+scene.add(ambientLight, spotLight);
 
 // cannon
 const cannonWorld = new CANNON.World();
@@ -55,7 +64,8 @@ cannonWorld.gravity.set(0, -40, 0);
 cannonWorld.broadphase = new CANNON.SAPBroadphase(cannonWorld);
 
 const defaultMaterial = new CANNON.Material('default');
-const ballMaterial = new CANNON.Material('ball');
+const ballsMaterial = new CANNON.Material('ball');
+const goalsMaterial = new CANNON.Material('goal');
 const defaultContactMaterial = new CANNON.ContactMaterial(
   defaultMaterial,
   defaultMaterial,
@@ -64,122 +74,165 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
     restitution: 0.3,
   }
 )
-const ballDefaultContactMaterial = new CANNON.ContactMaterial(
-  ballMaterial,
+const ballsDefaultContactMaterial = new CANNON.ContactMaterial(
+  ballsMaterial,
   defaultMaterial,
   {
     friction: 0.5,
     restitution: 0.7,
   }
 );
+const ballsGoalContactMaterial = new CANNON.ContactMaterial(
+  ballsMaterial,
+  goalsMaterial,
+  {
+    friction: 0.5,
+    restitution: 0.7,
+  }
+);
 cannonWorld.defaultContactMaterial = defaultContactMaterial;
-cannonWorld.addContactMaterial(ballDefaultContactMaterial);
+cannonWorld.addContactMaterial(ballsDefaultContactMaterial);
+cannonWorld.addContactMaterial(ballsGoalContactMaterial);
 
-// mesh - floor & wall
+// mesh
+
+// mesh - floor
 const planeGeometry = new THREE.BoxGeometry(50, 0.2, 50);
 const planeMaterial = new THREE.MeshStandardMaterial({
   color: '#666',
 })
-const floorMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-const wallMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-wallMesh.position.y = 25;
-wallMesh.position.z = -25;
-wallMesh.rotation.x = Math.PI / 2;
-scene.add(floorMesh, wallMesh);
+const planeShape = new CANNON.Box( new CANNON.Vec3(25, 0.1, 25) );
 
-const planeShape = new CANNON.Plane();
+const floorMesh = new THREE.Mesh(planeGeometry, planeMaterial);
 const floorBody = new CANNON.Body({
   mass: 0,
-  position: new CANNON.Vec3(0, 0.6, 0),
+  position: new CANNON.Vec3(0, 0, 0),
   shape: planeShape,
   material: defaultMaterial,
 });
-floorBody.quaternion.setFromAxisAngle(
-  new CANNON.Vec3(-1, 0, 0),
-  Math.PI / 2,
-);
+floorMesh.receiveShadow = true;
+scene.add(floorMesh);
 cannonWorld.addBody(floorBody);
 
-// mesh - goal
-const goalGeometry = new THREE.CircleGeometry(5, 32);
-const goalMaterial = new THREE.MeshStandardMaterial({
-  color: 'blue',
-});
-const goalMesh = new THREE.Mesh(goalGeometry, goalMaterial);
-goalMesh.position.set(0, 15, -24.8)
-scene.add(goalMesh);
-
-// mesh - sphere
-const sphereGeometry = new THREE.SphereGeometry(1, 32, 16);
-const sphereMaterial = new THREE.MeshStandardMaterial({
-  color: 'green',
-})
-const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-sphereMesh.name = "공";
-sphereMesh.position.set(0, 1.1, 20);
-scene.add(sphereMesh);
-
-const sphereShape = new CANNON.Sphere(0.5);
-const sphereBody = new CANNON.Body({
-  mass: 1,
-  position: new CANNON.Vec3(0, 5.1, 20),
-  shape: sphereShape,
-  material: ballMaterial,
-});
-sphereMesh.cannonBody = sphereBody;
-cannonWorld.addBody(sphereBody);
-
-// gltf
-// const gltfLoader = new GLTFLoader();
-
-// let ballMesh;
-// let ballBody;
-// gltfLoader.load(
-//   './model/ball.glb',
-//   gltf => {
-//     ballMesh = gltf.scene.children[0];
-//     ballMesh.position.set(0, 1.1, 20);
-//     scene.add(ballMesh);
-    
-//     gui.add(ballMesh.position, 'x', 0, 100, 0.01).name('공 x');
-//     gui.add(ballMesh.position, 'y', 0, 100, 0.01).name('공 y');
-//     gui.add(ballMesh.position, 'z', 0, 100, 0.01).name('공 z');
-
-//     const ballShape = new CANNON.Sphere(0.5);
-//     ballBody = new CANNON.Body({
-//       mass: 1,
-//       position: new CANNON.Vec3(0, 5.1, 20),
-//       shape: ballShape,
-//       material: ballMaterial,
-//     });
-    
-//     cannonWorld.addBody(ballBody);
-//   }
+// mesh - wall
+// const wallMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+// wallMesh.position.set(0, 25, -25)
+// wallMesh.rotation.x = Math.PI / 2;
+// wallMesh.castShadow = true;
+// wallMesh.receiveShadow = true;
+// const wallBody = new CANNON.Body({
+//   mass: 0,
+//   position: new CANNON.Vec3(0, 25, -25),
+//   shape: planeShape,
+//   material: defaultMaterial,
+// });
+// wallBody.quaternion.setFromAxisAngle(
+//   new CANNON.Vec3(1, 0, 0),
+//   Math.PI / 2,
 // );
+// scene.add(wallMesh);
+// cannonWorld.addBody(wallBody);
+
+// mesh - goal
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.load(
+  '/model/target.glb',
+  gltf => {
+    const target = gltf.scene.children[0];
+    target.position.set(0, 10, 0)
+    scene.add(target);
+  }
+);
+
+// const goalGeometry = new THREE.TorusGeometry(5, 1, 10, 30);
+// const goalMaterial = new THREE.MeshStandardMaterial({
+//   color: 'blue',
+// });
+// const goalMesh = new THREE.Mesh(goalGeometry, goalMaterial);
+// goalMesh.position.set(0, 15, -20)
+// goalMesh.castShadow = true;
+// scene.add(goalMesh);
+
+// const goalShape = CannonUtils.CreateTrimesh(goalMesh.geometry);
+// const goalBody = new CANNON.Body({
+//   mass: 0,
+//   position: new CANNON.Vec3(0, 15, -10),
+//   shape: goalShape,
+//   material: defaultMaterial,
+// });
+// cannonWorld.addBody(goalBody);
+
+// mesh - ball
+const balls = [];
+
+function Ball() {
+  this.geometry = new THREE.SphereGeometry();
+  this.material = new THREE.MeshStandardMaterial({
+    color: 'white',
+  })
+  this.mesh = new THREE.Mesh(this.geometry, this.material);
+  this.mesh.name = "공";
+  this.mesh.position.set(0, 1, 20);
+  this.mesh.castShadow = true;
+  scene.add(this.mesh);
+  
+  this.shape = new CANNON.Sphere(1);
+  this.cannonBody = new CANNON.Body({
+    mass: 1,
+    position: new CANNON.Vec3(0, 1, 20),
+    shape: this.shape,
+    material: ballsMaterial,
+  });
+  this.mesh.cannonBody = this.cannonBody;
+  cannonWorld.addBody(this.cannonBody);
+}
+
+let firstBall = new Ball();
+balls.push(firstBall);
 
 
 // draw
+const cannonDebugRenderer = new CannonDebugRenderer(scene, cannonWorld);
 const clock = new THREE.Clock();
+
 const draw = function () {
   const delta = clock.getDelta();
+  const elapsed = clock.getElapsedTime();
 
   let cannonStepTime = 1 / 60;
   if ( delta < 0.01 ) cannonStepTime = 1 / 120;
 
-  cannonWorld.step(cannonStepTime, delta, 3);
-
-  sphereMesh.position.copy(sphereBody.position);
-  sphereMesh.quaternion.copy(sphereBody.quaternion);
-
-  // if ( ballMesh ) {
-  //   ballMesh.position.copy(ballBody.position);
-  //   ballMesh.quaternion.copy(ballBody.quaternion);
-  // }
-
   controls.update();
+  stats.update();
+
+  cannonWorld.step(cannonStepTime, delta, 3);
+  cannonDebugRenderer.update();
+
+  balls.forEach((item) => {
+    if ( item.cannonBody ) {
+      item.mesh.position.copy(item.cannonBody.position);
+      item.mesh.quaternion.copy(item.cannonBody.quaternion);
+    }
+  })
+
+  // goalMesh.position.copy(goalBody.position);
+  // goalMesh.quaternion.copy(goalBody.quaternion);
+  // goalBody.position.y = 15 + Math.sin(elapsed  * 2) * 5;
+  // goalBody.position.x = Math.cos(elapsed  * 2) * 5;
+  
+  // wallMesh.position.copy(wallBody.position);
+  // wallMesh.quaternion.copy(wallBody.quaternion);
+
 
   renderer.render(scene, camera);
   renderer.setAnimationLoop(draw);
+
+  if ( progressChk ){
+    force = Math.min(2800, (Date.now() - startTime) * 3);
+    progressGage = force / 2800 * 100;
+    progressBar.style.width = progressGage + '%';
+  }
 }
 draw();
 
@@ -188,26 +241,88 @@ draw();
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+let force = 1000;
+
 const checkIntersects = function (){
   raycaster.setFromCamera(mouse, camera);
   
   const intersects = raycaster.intersectObjects(scene.children);
 
   for (const item of intersects) {
-    console.log(intersects[0].object);
     if ( intersects[0].object.cannonBody ){
-      console.log('ddd');
+
+      const forceX = -camera.position.x * 50;
+      const forceY = force;
+      const forceZ = -force;
+
+      item.object.cannonBody.applyForce(
+        new CANNON.Vec3(forceX, forceY, forceZ)
+      );
+
+      setTimeout(function () {
+        balls.push( new Ball() );
+      }, 500)
+
+      break;
     }
   }
 }
 
+const checkIntersectsMousedown = function (){
+  raycaster.setFromCamera(mouse, camera);
+  
+  const intersects = raycaster.intersectObjects(scene.children);
+
+  for (const item of intersects) {
+    if ( intersects[0].object.cannonBody ){
+      progressChk = true;
+      progress.style.opacity = '1';
+    }
+  }
+}
+
+const setSize = function () {
+  camera.aspect = window.innerWidth / document.documentElement.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, document.documentElement.clientHeight)
+  renderer.render(scene, camera);
+}
 
 
 // event
-canvas.addEventListener('click', function(e) {
+window.addEventListener('load', setSize);
+window.addEventListener('resize', setSize);
+
+canvas.addEventListener('mousedown', function(e) {
   mouse.x = e.clientX / canvas.width * 2 - 1;
   mouse.y = -(e.clientY / canvas.height * 2 - 1);
 
-  // console.log(camera.position);
+  startTime = Date.now();
+
+  checkIntersectsMousedown();
+
+  if ( progressChk ){
+    progress.style.top = `${e.clientY - 20}px`;
+    progress.style.left = `${e.clientX}px`;
+  }
+});
+
+canvas.addEventListener('mouseup', function(e) {
+  endTime = Date.now();
+
+  force = Math.min(2800, (endTime - startTime) * 3);
+  progressChk = false;
+  progressGage = 0;
+  progress.style.opacity = '0';
+});
+
+canvas.addEventListener('click', function(e) {
+  mouse.x = e.clientX / canvas.width * 2 - 1;
+  mouse.y = -(e.clientY / canvas.height * 2 - 1);
+  
   checkIntersects();
+
+  goalBody.addEventListener('collide', function () {
+    console.log('충돌');
+  })
 });
