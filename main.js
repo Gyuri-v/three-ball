@@ -145,13 +145,24 @@ gltfLoader.load(
   '/model/target.glb',
   (gltf) => {
     targetMesh = gltf.scene.children[0];
-    targetMesh.material = new THREE.Geometry().fromBufferGeometry(targetMesh.geometry);
     targetMesh.scale.set(3, 3, 3);
     targetMesh.rotation.z = Math.PI / 2;
     targetMesh.position.set(0, 10, 0);
     scene.add(targetMesh);
-
-    console.log(gltf);
+    
+    let targetPosition = new CANNON.Vec3( targetMesh.position.x, targetMesh.position.y - 1.2, targetMesh.position.z );
+    const targetShape = new CANNON.Cylinder(1.8, 1.8, 0.3, 10);
+    const targetBody = new CANNON.Body({
+      mass: 0,
+      position: targetPosition,
+      shape: targetShape,
+      material: defaultMaterial
+    });
+    targetBody.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 0, 0),
+      Math.PI / 2,
+    )
+    cannonWorld.addBody(targetBody);
   
     // const targetShape = CannonUtils.CreateTrimesh(targetMesh.geometry);
     // targetBody = new CANNON.Body({
