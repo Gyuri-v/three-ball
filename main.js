@@ -83,6 +83,18 @@ const ballsDefaultContactMaterial = new CANNON.ContactMaterial(
     restitution: 0.7,
   }
 );
+const ballsBallContactMaterial = new CANNON.ContactMaterial(
+  ballsMaterial,
+  defaultMaterial,
+  {
+    friction: 0.5,
+    restitution: 0.7,
+    contactEquationStiffness: 1e8,
+    contactEquationRelaxation: 3,
+    frictionEquationStiffness: 1e8,
+    frictionEquationRegularizationTime: 3,
+  }
+);
 const ballsGoalContactMaterial = new CANNON.ContactMaterial(
   ballsMaterial,
   goalsMaterial,
@@ -93,6 +105,7 @@ const ballsGoalContactMaterial = new CANNON.ContactMaterial(
 );
 cannonWorld.defaultContactMaterial = defaultContactMaterial;
 cannonWorld.addContactMaterial(ballsDefaultContactMaterial);
+cannonWorld.addContactMaterial(ballsBallContactMaterial);
 cannonWorld.addContactMaterial(ballsGoalContactMaterial);
 
 // mesh
@@ -136,10 +149,9 @@ cannonWorld.addBody(floorBody);
 
 // mesh - goal
 
-let targetGltf;
 let targetMesh;
 let targetBody;
-let targetLoaded = false;
+let targetShape;
 const gltfLoader = new GLTFLoader();
 gltfLoader.load(
   '/model/target.glb',
@@ -151,8 +163,8 @@ gltfLoader.load(
     scene.add(targetMesh);
     
     let targetPosition = new CANNON.Vec3( targetMesh.position.x, targetMesh.position.y - 1.2, targetMesh.position.z );
-    const targetShape = new CANNON.Cylinder(1.8, 1.8, 0.3, 10);
-    const targetBody = new CANNON.Body({
+    targetShape = new CANNON.Cylinder(1.8, 1.8, 0.3, 10);
+    targetBody = new CANNON.Body({
       mass: 0,
       position: targetPosition,
       shape: targetShape,
@@ -163,17 +175,6 @@ gltfLoader.load(
       Math.PI / 2,
     )
     cannonWorld.addBody(targetBody);
-  
-    // const targetShape = CannonUtils.CreateTrimesh(targetMesh.geometry);
-    // targetBody = new CANNON.Body({
-    //   mass: 0,
-    //   position: new CANNON.Vec3(0, 10, 0),
-    //   shape: targetShape,
-    //   material: defaultMaterial,
-    // });
-    // cannonWorld.addBody(targetBody);
-
-    // targetLoaded = true;
   }
 );
 
@@ -358,7 +359,7 @@ canvas.addEventListener('click', function(e) {
   
   checkIntersects();
 
-  // goalBody.addEventListener('collide', function () {
-  //   console.log('충돌');
-  // })
+  targetBody.addEventListener('collide', function () {
+    console.log('충돌');
+  })
 });
