@@ -8,28 +8,87 @@ import CannonUtils from './utils/cannonUtils.js'
 import CannonDebugRenderer from './utils/CannonDebugRenderer.js'
 import { Vector3 } from 'three';
 
-function CreateBall() {
-  this.geometry = new THREE.SphereGeometry();
-  this.material = new THREE.MeshStandardMaterial({
-    color: 'white',
-  })
-  this.mesh = new THREE.Mesh(this.geometry, this.material);
-  this.mesh.name = "공";
-  this.mesh.position.set(0, 1, 20);
-  this.mesh.castShadow = true;
-  scene.add(this.mesh);
-  
-  this.shape = new CANNON.Sphere(1);
-  this.cannonBody = new CANNON.Body({
-    mass: 1,
-    position: new CANNON.Vec3(0, 1, 20),
-    shape: this.shape,
-    material: ballsMaterial,
-    collisionFilterGroup: 2,
-    collisionFilterMask: 1,
-  });
-  this.mesh.cannonBody = this.cannonBody;
-  cannonWorld.addBody(this.cannonBody);
+class CreateBall {
+  constructor(info) {
+    this.scene = info.scene;
+    this.world = info.cannonWorld;
+
+    this.geometry = new THREE.SphereGeometry();
+    this.material = new THREE.MeshStandardMaterial({
+      color: 'white',
+    })
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
+    this.mesh.name = "공";
+    this.mesh.position.set(0, 1, 20);
+    this.mesh.castShadow = true;
+    this.scene.add(this.mesh);
+    
+    this.shape = new CANNON.Sphere(1);
+    this.body = new CANNON.Body({
+      mass: 1,
+      position: new CANNON.Vec3(0, 1, 20),
+      shape: this.shape,
+      material: ballsMaterial,
+      collisionFilterGroup: 2,
+      collisionFilterMask: 1,
+    });
+    this.mesh.cannonBody = this.body;
+    this.world.addBody(this.body);
+  }
+}
+
+class CreateTarget {
+  constructor(info) {
+    this.scene = info.scene;
+    this.world = info.cannonWorld;
+
+    this.x = info.x || 0;
+    this.y = info.y || 10;
+    this.z = info.z || 0;
+
+    console.log(info);
+
+    gltfLoader.load(
+      '/model/target.glb',
+      (gltf) => {
+        this.mesh = gltf.scene.children[0];
+        this.mesh.scale.set(3, 3, 3);
+        this.mesh.rotation.z = Math.PI / 2;
+        this.mesh.position.set(this.x, this.y, this.z);
+        this.scene.add( this.mesh );
+
+        this.setCannonBody();
+      }
+    );
+  }
+
+  setCannonBody() {
+    let targetPosition = new CANNON.Vec3( this.x, this.y - 1.2, this.z );
+    this.shape = new CANNON.Cylinder(1.8, 1.8, 0.3, 10);
+    this.body = new CANNON.Body({
+      mass: 0,
+      position: targetPosition,
+      shape: this.shape,
+      material: goalsMaterial,
+    });
+    this.body.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 0, 0),
+      Math.PI / 2,
+    );
+    this.mesh.cannonBody = this.body;
+    this.world.addBody(this.body);
+
+    // this.setEvent();
+  }
+
+  // setEvent() {
+  //   this.body.addEventListener('collide', function () {
+  //     setTimeout(function() {
+  //       this.world.removeBody(this.body);
+  //       this.scene.remove(this.mesh);
+  //     }, 500)
+  //   });
+  // }
 }
 
 
@@ -68,6 +127,9 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(0, 12, 32);
 camera.lookAt(0, 0, 0);
 scene.add(camera);
+
+// loader
+const gltfLoader = new GLTFLoader();
 
 // controls
 const controls = new OrbitControls( camera, renderer.domElement );
@@ -125,7 +187,6 @@ cannonWorld.addContactMaterial(ballsDefaultContactMaterial);
 cannonWorld.addContactMaterial(ballsGoalContactMaterial);
 
 // mesh
-
 // mesh - floor
 const planeGeometry = new THREE.BoxGeometry(50, 0.2, 50);
 const planeMaterial = new THREE.MeshStandardMaterial({
@@ -163,58 +224,15 @@ cannonWorld.addBody(floorBody);
 // scene.add(wallMesh);
 // cannonWorld.addBody(wallBody);
 
-// mesh - goal
-let targetMesh;
-let targetBody;
-let targetShape;
-const gltfLoader = new GLTFLoader();
-gltfLoader.load(
-  '/model/target.glb',
-  (gltf) => {
-    targetMesh = gltf.scene.children[0];
-    targetMesh.scale.set(3, 3, 3);
-    targetMesh.rotation.z = Math.PI / 2;
-    targetMesh.position.set(0, 10, 0);
-    scene.add(targetMesh);
-    
-    let targetPosition = new CANNON.Vec3( targetMesh.position.x, targetMesh.position.y - 1.2, targetMesh.position.z );
-    targetShape = new CANNON.Cylinder(1.8, 1.8, 0.3, 10);
-    targetBody = new CANNON.Body({
-      mass: 0,
-      position: targetPosition,
-      shape: targetShape,
-      material: defaultMaterial
-    });
-    targetBody.quaternion.setFromAxisAngle(
-      new CANNON.Vec3(1, 0, 0),
-      Math.PI / 2,
-    )
-    cannonWorld.addBody(targetBody);
-  }
-);
+// mesh - target
+const targets = [];
+let firstTarget = new CreateTarget({ scene, cannonWorld });
+targets.push(firstTarget);
 
-// const goalGeometry = new THREE.TorusGeometry(5, 1, 10, 30);
-// const goalMaterial = new THREE.MeshStandardMaterial({
-//   color: 'blue',
-// });
-// const goalMesh = new THREE.Mesh(goalGeometry, goalMaterial);
-// goalMesh.position.set(0, 15, -20)
-// goalMesh.castShadow = true;
-// scene.add(goalMesh);
-
-// const goalShape = CannonUtils.CreateTrimesh(goalMesh.geometry);
-// const goalBody = new CANNON.Body({
-//   mass: 0,
-//   position: new CANNON.Vec3(0, 15, -10),
-//   shape: goalShape,
-//   material: defaultMaterial,
-// });
-// cannonWorld.addBody(goalBody);
 
 // mesh - ball
 const balls = [];
-
-let firstBall = new CreateBall();
+let firstBall = new CreateBall({ scene, cannonWorld });
 balls.push(firstBall);
 
 
@@ -236,9 +254,9 @@ const draw = function () {
   cannonDebugRenderer.update();
 
   balls.forEach((item) => {
-    if ( item.cannonBody ) {
-      item.mesh.position.copy(item.cannonBody.position);
-      item.mesh.quaternion.copy(item.cannonBody.quaternion);
+    if ( item.mesh.cannonBody ) {
+      item.mesh.position.copy(item.mesh.cannonBody.position);
+      item.mesh.quaternion.copy(item.mesh.cannonBody.quaternion);
     }
   })
 
@@ -286,7 +304,7 @@ const checkIntersects = function (){
       );
 
       setTimeout(function () {
-        balls.push( new CreateBall() );
+        balls.push( new CreateBall({ scene, cannonWorld }) );
       }, 500)
 
       break;
@@ -348,7 +366,42 @@ canvas.addEventListener('click', function(e) {
   
   checkIntersects();
 
-  targetBody.addEventListener('collide', function () {
-    console.log('충돌');
-  })
+  // targets.forEach((item) => {
+  //   if ( item.mesh.cannonBody ){
+  //     item.mesh.cannonBody.addEventListener('collide', collide);
+  //   }
+  // });
+
+  // console.log(cannonWorld);
+
+  // cannonWorld.removeBody(firstTarget.body)
+
+  targets.forEach((item) => {
+    if ( item.mesh.cannonBody ){
+      item.mesh.cannonBody.addEventListener('collide', function (e) {
+        setTimeout(function () {
+          cannonWorld.removeBody(item.body);
+          scene.remove(item.mesh)
+        }, 500);
+      });
+    }
+  });
 });
+
+// function collide(e) {
+//   console.log(e.target);
+
+//   setTimeout(function () {
+//     cannonWorld.removeBody(e.target);
+//     // scene.remove()
+
+//     // const targetNew = new CreateTarget({ 
+//     //   scene,
+//     //   cannonWorld,
+//     //   x: Math.random() * 20 - 10,
+//     //   y: 5 + Math.random() * 10,
+//     //   z: Math.random() * -20,
+//     // });
+//     // targets.push(targetNew);
+//   }, 500)
+// }
