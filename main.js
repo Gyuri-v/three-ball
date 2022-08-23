@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import dat from 'dat.gui';
 import Stats from 'three/examples/jsm/libs/stats.module'
 import CannonUtils from './utils/cannonUtils.js'
@@ -136,43 +136,39 @@ cannonWorld.addBody(floorBody);
 
 // mesh - goal
 
+let targetGltf;
 let targetMesh;
 let targetBody;
 let targetLoaded = false;
-
-const materials = 
-const objLoader = new OBJLoader();
-objLoader.load(
-  '/model/target.obj',
-  (object) => {
-    targetMesh = object.children[0];
-    targetMesh.material = new THREE.MeshBasicMaterial({ color: 'red' });
+const gltfLoader = new GLTFLoader();
+gltfLoader.load(
+  '/model/target.glb',
+  (gltf) => {
+    targetMesh = gltf.scene.children[0];
+    targetMesh.material = new THREE.Geometry().fromBufferGeometry(targetMesh.geometry);
     targetMesh.scale.set(3, 3, 3);
-    targetMesh.rotation.x = Math.PI;
-    targetMesh.rotation.y = Math.PI / 2;
+    targetMesh.rotation.z = Math.PI / 2;
     targetMesh.position.set(0, 10, 0);
     scene.add(targetMesh);
 
-    const targetShape = CannonUtils.CreateTrimesh(targetMesh.geometry);
-    targetBody = new CANNON.Body({
-      mass: 0,
-      position: new CANNON.Vec3(0, 10, 0),
-      shape: targetShape,
-      material: defaultMaterial,
-    });
-    cannonWorld.addBody(targetBody);
+    console.log(gltf);
+  
+    // const targetShape = CannonUtils.CreateTrimesh(targetMesh.geometry);
+    // targetBody = new CANNON.Body({
+    //   mass: 0,
+    //   position: new CANNON.Vec3(0, 10, 0),
+    //   shape: targetShape,
+    //   material: defaultMaterial,
+    // });
+    // cannonWorld.addBody(targetBody);
 
-    targetLoaded = true;
-  },
-  (xhr) => {
-    // 모델이 로드되는 동안
-    console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-  },
-  (error) => {
-    // 모델 로드가 실패했을 때
-    console.log('An error happend');
+    // targetLoaded = true;
   }
 );
+
+
+
+
 
 // const goalGeometry = new THREE.TorusGeometry(5, 1, 10, 30);
 // const goalMaterial = new THREE.MeshStandardMaterial({
