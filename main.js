@@ -8,6 +8,35 @@ import CannonUtils from './utils/cannonUtils.js'
 import CannonDebugRenderer from './utils/CannonDebugRenderer.js'
 import { Vector3 } from 'three';
 
+function CreateBall() {
+  this.geometry = new THREE.SphereGeometry();
+  this.material = new THREE.MeshStandardMaterial({
+    color: 'white',
+  })
+  this.mesh = new THREE.Mesh(this.geometry, this.material);
+  this.mesh.name = "공";
+  this.mesh.position.set(0, 1, 20);
+  this.mesh.castShadow = true;
+  scene.add(this.mesh);
+  
+  this.shape = new CANNON.Sphere(1);
+  this.cannonBody = new CANNON.Body({
+    mass: 1,
+    position: new CANNON.Vec3(0, 1, 20),
+    shape: this.shape,
+    material: ballsMaterial,
+    collisionFilterGroup: 2,
+    collisionFilterMask: 1,
+  });
+  this.mesh.cannonBody = this.cannonBody;
+  cannonWorld.addBody(this.cannonBody);
+}
+
+
+
+
+
+
 const canvas = document.querySelector('.canvas');
 const progress = document.querySelector('.cursor-progress');
 const progressBar = progress.querySelector('.bar');
@@ -83,18 +112,6 @@ const ballsDefaultContactMaterial = new CANNON.ContactMaterial(
     restitution: 0.7,
   }
 );
-const ballsBallContactMaterial = new CANNON.ContactMaterial(
-  ballsMaterial,
-  defaultMaterial,
-  {
-    friction: 0.5,
-    restitution: 0.7,
-    contactEquationStiffness: 1e8,
-    contactEquationRelaxation: 3,
-    frictionEquationStiffness: 1e8,
-    frictionEquationRegularizationTime: 3,
-  }
-);
 const ballsGoalContactMaterial = new CANNON.ContactMaterial(
   ballsMaterial,
   goalsMaterial,
@@ -105,7 +122,6 @@ const ballsGoalContactMaterial = new CANNON.ContactMaterial(
 );
 cannonWorld.defaultContactMaterial = defaultContactMaterial;
 cannonWorld.addContactMaterial(ballsDefaultContactMaterial);
-cannonWorld.addContactMaterial(ballsBallContactMaterial);
 cannonWorld.addContactMaterial(ballsGoalContactMaterial);
 
 // mesh
@@ -148,7 +164,6 @@ cannonWorld.addBody(floorBody);
 // cannonWorld.addBody(wallBody);
 
 // mesh - goal
-
 let targetMesh;
 let targetBody;
 let targetShape;
@@ -178,10 +193,6 @@ gltfLoader.load(
   }
 );
 
-
-
-
-
 // const goalGeometry = new THREE.TorusGeometry(5, 1, 10, 30);
 // const goalMaterial = new THREE.MeshStandardMaterial({
 //   color: 'blue',
@@ -203,29 +214,7 @@ gltfLoader.load(
 // mesh - ball
 const balls = [];
 
-function Ball() {
-  this.geometry = new THREE.SphereGeometry();
-  this.material = new THREE.MeshStandardMaterial({
-    color: 'white',
-  })
-  this.mesh = new THREE.Mesh(this.geometry, this.material);
-  this.mesh.name = "공";
-  this.mesh.position.set(0, 1, 20);
-  this.mesh.castShadow = true;
-  scene.add(this.mesh);
-  
-  this.shape = new CANNON.Sphere(1);
-  this.cannonBody = new CANNON.Body({
-    mass: 1,
-    position: new CANNON.Vec3(0, 1, 20),
-    shape: this.shape,
-    material: ballsMaterial,
-  });
-  this.mesh.cannonBody = this.cannonBody;
-  cannonWorld.addBody(this.cannonBody);
-}
-
-let firstBall = new Ball();
+let firstBall = new CreateBall();
 balls.push(firstBall);
 
 
@@ -297,7 +286,7 @@ const checkIntersects = function (){
       );
 
       setTimeout(function () {
-        balls.push( new Ball() );
+        balls.push( new CreateBall() );
       }, 500)
 
       break;
