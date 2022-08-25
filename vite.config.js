@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-    base: './',
+    base: '/three-ball/',
     build: {
         chunkSizeWarningLimit: 1600,
     },

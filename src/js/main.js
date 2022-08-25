@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // import dat from 'dat.gui';
 // import Stats from 'three/examples/jsm/libs/stats.module'
-// import CannonDebugRenderer from '/utils/CannonDebugRenderer.js'
+// import CannonDebugRenderer from '/src/utils/CannonDebugRenderer.js'
 import CreateTarget from './CreateTarget.js';
 import CreateBall from './CreateBall.js';
 
