@@ -13,7 +13,7 @@ export default class CreateTarget {
         this.z = info.z || 0;
     
         this.gltfLoader.load(
-            '/assets/model/target.glb',
+            './assets/model/target.glb',
             (gltf) => {
                 this.mesh = gltf.scene.children[0];
                 this.mesh.name = this.name;
