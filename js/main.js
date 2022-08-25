@@ -61,8 +61,6 @@ loadingManager.onError = () => {
 const gltfLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader(loadingManager);
 const cubeTextureLoader = new THREE.CubeTextureLoader();
-// const gradientTex = textureLoader.load('/textures/gradient.png');
-// gradientTex.magFilter = THREE.NearestFilter;
 
 // controls
 const controls = new OrbitControls( camera, renderer.domElement );
@@ -181,7 +179,6 @@ let firstBall = new CreateBall({
   scene, 
   cannonWorld, 
   ballsMaterial,
-  // gradientTex,
   name : `공${ballCount}`,
 });
 balls.push(firstBall);
@@ -251,7 +248,6 @@ const checkIntersects = function (){
             scene, 
             cannonWorld, 
             ballsMaterial,
-            // gradientTex,
             name : `공${ballCount}`,
           });
           balls.push(newBall);
