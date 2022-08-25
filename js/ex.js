@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GUI } from 'dat.gui'
 import * as CANNON from 'cannon-es'
-import CannonDebugRenderer from './utils/CannonDebugRenderer.js'
+import CannonDebugRenderer from '../utils/CannonDebugRenderer.js'
 
 const scene = new THREE.Scene()
 scene.add(new THREE.AxesHelper(5))
