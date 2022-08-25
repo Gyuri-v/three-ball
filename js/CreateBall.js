@@ -7,11 +7,12 @@ export default class CreateBall {
         this.world = info.cannonWorld;
         this.name = info.name;
         this.ballsMaterial = info.ballsMaterial;
+        // this.gradientTex = info.gradientTex;
     
         this.geometry = new SphereGeometry();
         this.material = new MeshToonMaterial({
-            color: 'plum',
-            // gradientMap: gradientTex,
+            color: 'gray',
+            // gradientMap: this.gradientTex,
         });
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.name = this.name;

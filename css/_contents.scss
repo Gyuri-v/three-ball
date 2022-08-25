@@ -1,7 +1,18 @@
+.status{
+    position: fixed; top: 40px; left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    
+    &_title{ margin-bottom: 10px; font-size: 24px; font-weight: 600; color: #000; }
+    &_text{ margin-bottom: 20px; font-size: 15px; font-weight: 400; color: #333; }
+    &_count{ font-size: 50px; font-weight: 800; color: #000; 
+        span{ display: inline-block; width: 30px; }
+    }
+    &_score{ margin-right: 50px; }
+}
 
 
-
-.cursor-progress{
+.progress{
     position: fixed;
     transform: translate(-50%, -50%);
     width: 100px; height: 10px;

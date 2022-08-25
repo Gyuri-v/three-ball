@@ -7,14 +7,20 @@
     <title>귤공놀이</title>
   </head>
   <body>
-    <div class="cursor-progress">
-      <div class="bar"></div>
-    </div>
     <div class="container">
+      <div class="status">
+        <h2 class="status_title">공놀이 GAME</h2>
+        <p class="status_text">* 공을 던질 수 있는 기회는 10번 입니다.</p>
+        <strong class="status_count status_score">SCORE : <span>0</span></strong>
+        <strong class="status_count status_lives">LIVES : <span>9</span></strong>
+      </div>
       <div class="canvas-wrap">
         <canvas class="canvas" width="1920" height="1080"></canvas>
       </div>
+      <div class="progress">
+        <div class="bar"></div>
+      </div>
     </div>
-    <script type="module" src="/main.js"></script>
+    <script type="module" src="/js/main.js"></script>
   </body>
 </html>

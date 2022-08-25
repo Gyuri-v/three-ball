@@ -4,13 +4,15 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import dat from 'dat.gui';
 import Stats from 'three/examples/jsm/libs/stats.module'
-import CannonDebugRenderer from './utils/CannonDebugRenderer.js'
-import CreateTarget from './js/CreateTarget.js';
-import CreateBall from './js/CreateBall.js';
+import CannonDebugRenderer from '/utils/CannonDebugRenderer.js'
+import CreateTarget from './CreateTarget.js';
+import CreateBall from './CreateBall.js';
 
 const canvas = document.querySelector('.canvas');
-const progress = document.querySelector('.cursor-progress');
+const progress = document.querySelector('.progress');
 const progressBar = progress.querySelector('.bar');
+const score = document.querySelector('.status_score span');
+const lives = document.querySelector('.status_lives span');
 
 let startTime = 0;
 let endTime = 0;
@@ -59,6 +61,8 @@ loadingManager.onError = () => {
 const gltfLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader(loadingManager);
 const cubeTextureLoader = new THREE.CubeTextureLoader();
+// const gradientTex = textureLoader.load('/textures/gradient.png');
+// gradientTex.magFilter = THREE.NearestFilter;
 
 // controls
 const controls = new OrbitControls( camera, renderer.domElement );
@@ -68,11 +72,11 @@ controls.maxPolarAngle = THREE.MathUtils.degToRad(70);
 controls.minPolarAngle = THREE.MathUtils.degToRad(20);
 
 // gui
-const gui = new dat.GUI();
+// const gui = new dat.GUI();
 
 // status
-const stats = Stats()
-document.body.appendChild(stats.dom)
+// const stats = Stats()
+// document.body.appendChild(stats.dom)
 
 // light
 const ambientLight = new THREE.AmbientLight('#fff', 0.1);
@@ -85,13 +89,14 @@ scene.add(ambientLight, spotLight);
 
 // background
 const backgroundTexture = cubeTextureLoader
-  .setPath('/textures/background/')
+  .setPath('/textures/background2/')
   .load([
     'px.png', 'nx.png',
     'py.png', 'ny.png',
     'pz.png', 'nz.png',
   ]);
 scene.background = backgroundTexture;
+// scene.background = new THREE.Color('#7faabb');
 
 // cannon
 const cannonWorld = new CANNON.World();
@@ -176,6 +181,7 @@ let firstBall = new CreateBall({
   scene, 
   cannonWorld, 
   ballsMaterial,
+  // gradientTex,
   name : `공${ballCount}`,
 });
 balls.push(firstBall);
@@ -193,7 +199,7 @@ const draw = function () {
   if ( delta < 0.01 ) cannonStepTime = 1 / 120;
 
   controls.update();
-  stats.update();
+  // stats.update();
 
   cannonWorld.step(cannonStepTime, delta, 3);
   // cannonDebugRenderer.update();
@@ -236,21 +242,22 @@ const checkIntersects = function (){
       item.object.cannonBody.applyForce(
         new CANNON.Vec3(forceX, forceY, forceZ)
       );
-  
-      if ( ballCount === 11 ) return;
 
-      console.log( ballCount );
-  
-      setTimeout(function () {
-        let newBall = new CreateBall({ 
-          scene, 
-          cannonWorld, 
-          ballsMaterial,
-          name : `공${ballCount}`,
-        });
-        balls.push(newBall);
-        ballCount++;
-      }, 1000);
+      setTimeout( function () {
+        lives.innerText = Math.max(0, 10 - ballCount);
+        
+        if ( ballCount < 11 ) {
+          let newBall = new CreateBall({ 
+            scene, 
+            cannonWorld, 
+            ballsMaterial,
+            // gradientTex,
+            name : `공${ballCount}`,
+          });
+          balls.push(newBall);
+          ballCount++;
+        }
+      }, 1000)
     }
   }
 }
@@ -324,6 +331,8 @@ const collideTargetBall = function () {
         setTimeout(function () {
           cannonWorld.removeBody(item.body);
           scene.remove(item.mesh);
+
+          score.innerText = targetCount - 1;
 
           const newTarget = new CreateTarget({ 
             scene,
