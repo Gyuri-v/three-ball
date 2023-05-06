@@ -87,7 +87,7 @@ scene.add(ambientLight, spotLight);
 
 // background
 const backgroundTexture = cubeTextureLoader
-  .setPath('./assets/textures/background2/')
+  .setPath('assets/textures/background2/')
   .load([
     'px.png', 'nx.png',
     'py.png', 'ny.png',
@@ -139,7 +139,7 @@ cannonWorld.addContactMaterial(ballsGoalContactMaterial);
 //   color: '#666',
 // })
 
-const floorTexture = textureLoader.load('./assets/textures/floor.jpg');
+const floorTexture = textureLoader.load('assets/textures/floor.jpg');
 floorTexture.wrapS = THREE.RepeatWrapping;
 floorTexture.wrapT = THREE.RepeatWrapping;
 floorTexture.repeat.x = 10;
